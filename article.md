@@ -598,6 +598,8 @@ Type inference even works beautifully with enum types.
 
 > TODO: a nice little conclusion about how it's worth investing time into boilerplate for long-term codebase scalability, free documentation, and type-safety.
 
+> TODO: a short remark encouraging people to apply to Vivacity.
+
 
 # Appendix: Mixin Documentation
 
