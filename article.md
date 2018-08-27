@@ -4,7 +4,7 @@ Once a team first takes the leap into the world of types with Typescript, it see
 
 > The are *some* guides out there already, such as [this useful guide][zalecki] by Michal Zalecki. While that can get you started, it doesn't tell you how to deal with associations, which get pretty tricky. We also hope this guides acts as a more comprehensive tutorial that guides you from start to being able to use Sequlize with Typescript fairly fluently.
 
-> Usually, adding types is a matter of adding a `@types` package, but for Sequelize, it's a more difficult endeavour. We have to know how to structure our app so that we get the best type inference; we have to understand how to define different types which the Sequelize functions will take to generate their own typings; and do lots of boilerplate to get support for associations.
+Usually, adding types is a matter of adding a `@types` package, but for Sequelize, it's a more difficult endeavour. We have to know how to structure our app so that we get the best type inference; we have to understand how to define different types which the Sequelize functions will take to generate their own typings; and do lots of boilerplate to get support for associations.
 
 ## Let's get started
 
@@ -46,7 +46,7 @@ $ yarn install
 $ yarn start
 ```
 
-We now have a very simple Express app. Take a look at `src/app.ts`. This is the only source file. It just defines a single request handler that returns the json `{ message: 'hello, world' }` and then tells Express to listen on port 3000. We've also set up a basic Typescript project with tslint too. These are set up in the files `tsconfig.json` and `tslint.json`. We've also installed the packages `@types/sequelize` and `@types/express`. These are the Typescript definitions for Sequelize and Express.
+We now have a very simple Express app. Take a look at `src/app.ts`. This is the only source file. It just defines a single request handler that returns the json `{ message: 'hello, world' }` and then tells Express to listen on port 3000. We've also set up a basic Typescript project with tslint too. These are set up in the files `tsconfig.json` and `tslint.json`. We've also installed the packages `@types/sequelize` and `@types/express`. These are the Typescript definitions for Sequelize and Express. We've also installed the `pg` and `pg-hstore` packages because we'll be using postgres, but feel free to use something else. 
 
 ## Models, models, models
 
@@ -148,6 +148,9 @@ import { SequelizeAttributes } from "src/typings/SequelizeAttributes";
 export interface PostAttributes {
   id?: number;
   name: string;
+  title: string;
+  text: string;
+  category: 'text' | 'croissants' | 'techno';
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -157,6 +160,9 @@ export interface PostInstance extends Sequelize.Instance<PostAttributes>, PostAt
 
 export const PostFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes): Sequelize.Model<PostInstance, PostAttributes> => {
   const attributes: SequelizeAttributes<PostAttributes> = {
+    name: {
+      type: DataTypes.STRING
+    },
     title: {
       type: DataTypes.STRING
     },
