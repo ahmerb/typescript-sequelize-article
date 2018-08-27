@@ -1,10 +1,14 @@
 # So you want to use types with Sequelize?
 
-Once a team first takes the leap into the world of types with Typescript, it seems there's no going back. Typescript has become common to see in front-end applications, so why aren't we using all those juicy compile-time type checks on the server? At Vivacity, we've adopted Typescript on *both* the front- and back-end for new projects. We're currently building a new data set management tool using Typescript, Express and Sequelize. This guide will step you through how to set this up so you can create, read, update and delete without ever getting a type wrong.
+Once a team first takes the leap into the world of types with Typescript, it seems there's no going back. Typescript has become common to see in front-end applications, so why aren't we using all those juicy compile-time type checks on the server? At Vivacity, we've adopted Typescript on *both* the front- and back-end for one of our new projects. We're currently building a new data set management tool using Typescript, Express and Sequelize. This guide will step you through how to set this up so you can create, read, update and delete without ever getting a type wrong.
+
+> The are *some* guides out there already, such as [this useful guide][zalecki] by Michal Zalecki. While that can get you started, it doesn't tell you how to deal with associations, which get pretty tricky. We also hope this guides acts as a more comprehensive tutorial that guides you from start to being able to use Sequlize with Typescript fairly fluently.
+
+> Usually, adding types is a matter of adding a `@types` package, but for Sequelize, it's a more difficult endeavour. We have to know how to structure our app so that we get the best type inference; we have to understand how to define different types which the Sequelize functions will take to generate their own typings; and do lots of boilerplate to get support for associations.
 
 ## Let's get started
 
-We're about to embark on a rollercoaster adventure. At first, adding Typescript will seem like nothing but a cumbersome waste of time. Hours lost to just littering your Sequelize models with a slew of verbose type annotations. But, peservere! By the time we reach the end, your models will be so well typed that your api routes will practically be writing themselves. Here's a sneak peak.
+We're about to embark on a rollercoaster adventure. At first, adding Typescript will seem like nothing but a cumbersome waste of time. Hours lost to just littering your Sequelize models with a slew of verbose type annotations. But, persevere! By the time we reach the end, your models will be so well typed that your api routes will practically be writing themselves. Here's a sneak peak.
 
 ![image TODO][todo]
 
@@ -42,7 +46,7 @@ $ yarn install
 $ yarn start
 ```
 
-We now have a very simple Express app. Take a look at `app.ts`. It just defines a single request handler that returns the json `{ message: 'hello, world' }` and then tells Express to listen on port 3000.
+We now have a very simple Express app. Take a look at `src/app.ts`. This is the only source file. It just defines a single request handler that returns the json `{ message: 'hello, world' }` and then tells Express to listen on port 3000. We've also set up a basic Typescript project with tslint too. These are set up in the files `tsconfig.json` and `tslint.json`. We've also installed the packages `@types/sequelize` and `@types/express`. These are the Typescript definitions for Sequelize and Express.
 
 ## Models, models, models
 
@@ -68,11 +72,15 @@ The second type each model needs is a `ModelInstance`. This represents a Sequeli
 ```typescript
 // src/models/User.ts
 export interface UserInstance extends Sequelize.Instance<UserAttributes>, UserAttributes {
-  // At the moment, there's nothing more to add apart from the methods and attributes that the types `Sequelize.Instance<UserAttributes>` and `UserAttributes` give us. We'll add more here when we get on to adding associations.
+  // At the moment, there's nothing more to add apart
+  // from the methods and attributes that the types 
+  // `Sequelize.Instance<UserAttributes>` and
+  // `UserAttributes` give us. We'll add more here when
+  //  we get on to adding associations.
 };
 ```
 
-Now, we have the two types required. Next, we want to create a function that will actually define a Sequelize model for the `Users` table. The model should correspond to the `UserAttributes` and `UserInstance` types that we've already defined. We call this function `UserFactory`. In typical Sequelize manner, this function will take your Sequelize instance and a `DataTypes` object, and return the created Sequelize model. To define models in sequelize, we use the `sequelize.define<TInstance, TAttributes>()` function. The function takes an object which specifies the columns to create. 
+Now, we have the two types required. Next, we want to create a function that will actually define a Sequelize model for the `Users` table. The model should correspond to the `UserAttributes` and `UserInstance` types that we've already defined. We call this function `UserFactory`. In typical Sequelize manner, this function will take your Sequelize instance and a `DataTypes` object, and return the created Sequelize model. To define models in Sequelize, we use the `sequelize.define<TInstance, TAttributes>()` function. The function takes an object which specifies the columns to create. 
 
 ```typescript
 // src/models/User.ts
@@ -89,7 +97,7 @@ export const UserFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
 };
 ```
 
-Let's take a look at the `SequelizeAttributes<T>` type we use. To ensure that we pass `sequelize.define` an object that has definitions for all the attributes we specified in `UserAttributes`, we can create our own type `SequelizeAttributes<T>`. This is defined as follows. We'll put it in a `src/typings/` directory.
+Let's take a look at the `SequelizeAttributes<T>` type we use. To ensure that we pass `sequelize.define` an object that has definitions for all the attributes we specified in `UserAttributes`, we can create our own type `SequelizeAttributes<T>`. This is defined as follows. We'll put it in a `src/typings/` directory. We got this type definition from the great [article][zalecki] we mentioned by Michal Zalecki.
 
 ```typescript
 // src/typings/SequelizeAttributes/index.d.ts
@@ -205,7 +213,7 @@ const sequelizeConfig = require('config/sequelizeConfig.json');
 const db = createModels(sequelizeConfig);
 ```
 
-Now, let's make the `createModels` function. Typically, people create an `index.ts` file that has the function that creates models as a default export. The function then just calls `sequelize.import` with every file in the directory, which would be the model files. The problem with with that approach is that there's no way to maintain typechecking. To keep those juicy types, we'll create an interface called `DbInterface`. Then, `createModels` will return an object `db` of type `DbInterface` which will have the Sequelize models attached to them. The important bit is that it will be explicity defined in `DbInterface` which models are defined and what attributes and methods each model has. The `db` object can then be passed to api route handlers, which can use the models to make Sequelize queries.
+Now, let's make the `createModels` function. Typically, people create an `index.ts` file that has the function that creates models as a default export. The function then just calls `sequelize.import` with every file in the directory, which would be the model files. The problem with that approach is that there's no way to maintain typechecking. To keep those juicy types, we'll create an interface called `DbInterface`. Then, `createModels` will return an object `db` of type `DbInterface` which will have the Sequelize models attached to them. The important bit is that it will be explicitly defined in `DbInterface` which models are defined and what attributes and methods each model has. The `db` object can then be passed to api route handlers, which can use the models to make Sequelize queries.
 
 Let's define `DbInterface`.
 
@@ -280,7 +288,7 @@ As an example, when you creating a Post, just look at how autocomplete blesses y
 
 ![todo]
 
-If you try and pass an object that isn't exactly right, Typescript will know and tell you this at compile time! At compile time!!! No more waiting till production before you realise that you've made a typo, or that some attribute is a string, not a number.
+If you try and pass an object that isn't exactly right, Typescript will know and tell you this at compile time! At compile time!! With any good editor or IDE, you'll get these errors right in your editor. No more waiting till production before you realise that you've made a typo, or that some attribute is a string, not a number.
 
 ## Relationships are hard
 
@@ -404,7 +412,7 @@ export interface CommentInstance extends Sequelize.Instance<CommentAttributes>, 
 };
 ```
 
-Well, those are a mouthfull. Let's break them down.
+Well, those are a mouthful. Let's break them down.
 
 - `Sequelize.BelongsToGetAssociationMixin<RoleInstance>` is a generic type that takes some `ModelInstance` interface and produces a type for the corresponding `getRole` function (e.g. `getAuthor`).
 - `Sequelize.BelongsToSetAssociationMixin<RoleInstance, RoleId>` is a generic type that takes some `ModelInstance` interface and the type of the primary key of that model. It produces a type for the corresponding `setRole` function.
@@ -412,7 +420,7 @@ Well, those are a mouthfull. Let's break them down.
 
 Now this is where it starts to get crazy. You'll need to add a set of mixin functions for every single association you create and on both the models involved in the association. Each type of association you define, i.e. `BelongsTo`, `BelongsToMany`, `HasOne` or `HasMany`, instructs Sequelize to add different functions to the model instances. You'll have to manually add type declarations for every association on every model. Yep. Every single one.
 
-I'm about to show you the new instance interfaces for our schema. Please don't be scared. Rumour has it I showed these to a colleague and they were so terrified of ever having to write them that they quit web development all together and ran away to Latvia to become a swimming instructor (honestly, true story). But, don't go! Luckily, we at Vivacity Labs like to automate things so we've written a script [here][associations_script] that will generate them for you. More over, once I show you some lovely pictures of just how amazing getting all this type inference is when you're writing api routes, it'll all be worth it. Anyway, here they are.
+I'm about to show you the new instance interfaces for our schema. Please don't be scared. Rumour has it I showed these to a colleague and they were so terrified of ever having to write them that they quit web development all together and ran away to Latvia to become a swimming instructor (honestly, true story). But, don't go! Luckily, we at Vivacity Labs like to automate things so we've written a script [here][associations_script] that will generate them for you. Moreover, once I show you some lovely pictures of just how amazing getting all this type inference is when you're writing api routes, it'll all be worth it. Anyway, here they are.
 
 ```typescript
 export interface CommentInstance extends Sequelize.Instance<CommentAttributes>, CommentAttributes {
@@ -560,13 +568,15 @@ Okay, we've just slaved away writing these big interfaces (or, I did, but you ha
 
 ![todo]
 
-The types Sequelize provide are well detailed, upto the most intricate settings in options objects.
+The types Sequelize provide are well detailed, up to the most intricate settings in options objects.
 
 ![todo]
 
 Type inference even works beautifully with enum types.
 
 ![todo]
+
+You may need to install extensions for your editor to get type inference and linting. VS Code has built-in Typescript support and IntelliSense. We also have the `tslint` extension installed. 
 
 > TODO: a nice little conclusion about how it's worth investing time into boilerplate for long-term codebase scalability, free documentation, and type-safety.
 
@@ -583,3 +593,4 @@ Type inference even works beautifully with enum types.
 [sqlize_associations_docs]: http://docs.sequelizejs.com/manual/tutorial/associations.html
 [sqlize_config_docs]: http://docs.sequelizejs.com/manual/tutorial/
 [associations_script]: #
+[zalecki]: https://michalzalecki.com/using-sequelize-with-typescript/
