@@ -578,9 +578,11 @@ Type inference even works beautifully with enum types.
 
 You may need to install extensions for your editor to get type inference and linting. VS Code has built-in Typescript support and IntelliSense. We also have the `tslint` extension installed. 
 
-> TODO: a nice little conclusion about how it's worth investing time into boilerplate for long-term codebase scalability, free documentation, and type-safety.
+So, that's that. A small investment into boilerplate and setting up Typescript brings us long-term codebase scalability, free documentation and type-safety. A few weeks of catching bugs instantly in the editor, better code readability and code completion, then you'll be sure its worth it.
 
-> TODO: a short remark encouraging people to apply to Vivacity.
+By Ahmer Butt, with the help of Maksis, Dimitri, Martin, Amir and Craig.
+
+Are you interested in working on similar problems to what we've described in this blog? If you want to work in a team on the cutting edge of transport innovation, then Vivacity Labs are for you. Send us your CV!
 
 
 # Appendix: Mixin Documentation
