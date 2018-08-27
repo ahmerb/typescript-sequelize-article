@@ -585,11 +585,6 @@ By Ahmer Butt, with the help of Maksis, Dimitri, Martin, Amir and Craig.
 Are you interested in working on similar problems to what we've described in this blog? If you want to work in a team on the cutting edge of transport innovation, then Vivacity Labs are for you. Send us your CV!
 
 
-# Appendix: Mixin Documentation
-
-> TODO: upto date type definitions for all of the mixin functions. Also talk about how if you have a custom join table, you need to pass that in to the BelongsToMany mixins.
-
-
 [todo]: https://i.imgur.com/OvMZBs9.jpg
 [repo]: https://github.com/ahmerb/ts-sqlize-code/
 [sqlize_associations_docs]: http://docs.sequelizejs.com/manual/tutorial/associations.html
