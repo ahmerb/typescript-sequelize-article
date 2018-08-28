@@ -602,6 +602,8 @@ If you want to see the repo at this point, run
 $ git checkout 2.associations
 ```
 
+We've also added lots of example api routes to `app.ts` so you can see how to work with associations.
+
 ## Finally, the good stuff!
 
 Okay, we've just slaved away writing these big interfaces (or, I did, but you have a nice automated tool to do it for you). What was the point? Well, just look at these.
