@@ -91,7 +91,7 @@ export const UserFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
     }
   };
 
-  const User = sequelize.define<UserInstance, UserAttributes>("User", attributes);
+  const User = sequelize.define<UserInstance, UserAttributes>('User', attributes);
 
   return User;
 };
@@ -114,8 +114,10 @@ That's it! We've now created our first model file using Sequelize and Typescript
 
 ```typescript
 // src/models/User.ts
-import * as Sequelize from "sequelize";
-import { SequelizeAttributes } from "src/typings/SequelizeAttributes";
+import * as Sequelize from 'sequelize';
+import { CommentAttributes, CommentInstance } from 'models/Comment';
+import { PostAttributes, PostInstance } from 'models/Post';
+import { SequelizeAttributes } from 'typings/SequelizeAttributes';
 
 export interface UserAttributes {
   id?: number;
@@ -134,7 +136,7 @@ export const UserFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
     }
   };
 
-  const User = sequelize.define<UserInstance, UserAttributes>("User", attributes);
+  const User = sequelize.define<UserInstance, UserAttributes>('User', attributes);
 
   return User;
 };
@@ -142,15 +144,17 @@ export const UserFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
 
 ```typescript
 // src/models/Post.ts
-import * as Sequelize from "sequelize";
-import { SequelizeAttributes } from "src/typings/SequelizeAttributes";
+import * as Sequelize from 'sequelize';
+import { CommentAttributes, CommentInstance } from 'models/Comment';
+import { UserAttributes, UserInstance } from 'models/User';
+import { SequelizeAttributes } from 'typings/SequelizeAttributes';
 
 export interface PostAttributes {
   id?: number;
   name: string;
   title: string;
   text: string;
-  category: 'text' | 'croissants' | 'techno';
+  category: 'tech' | 'croissants' | 'techno';
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -174,7 +178,7 @@ export const PostFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
     }
   };
 
-  const Post = sequelize.define<PostInstance, PostAttributes>("Post", attributes);
+  const Post = sequelize.define<PostInstance, PostAttributes>('Post', attributes);
 
   return Post;
 };
@@ -182,12 +186,14 @@ export const PostFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
 
 ```typescript
 // src/models/Comment.ts
-import * as Sequelize from "sequelize";
-import { SequelizeAttributes } from "src/typings/SequelizeAttributes";
+import * as Sequelize from 'sequelize';
+import { PostAttributes, PostInstance } from 'models/Post';
+import { UserAttributes, UserInstance } from 'models/User';
+import { SequelizeAttributes } from 'typings/SequelizeAttributes';
 
 export interface CommentAttributes {
   id?: number;
-  name: string;
+  text: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -202,10 +208,11 @@ export const CommentFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequel
     }
   };
 
-  const Comment = sequelize.define<CommentInstance, CommentAttributes>("Comment", attributes);
+  const Comment = sequelize.define<CommentInstance, CommentAttributes>('Comment', attributes);
 
   return Comment;
 };
+
 ```
 
 ## But how do I use these?
@@ -217,6 +224,7 @@ Great. We have defined a load of factories and interfaces, but how do we actuall
 import { createModels } from 'models';
 const sequelizeConfig = require('config/sequelizeConfig.json');
 const db = createModels(sequelizeConfig);
+db.sequelize.sync(); // tells Sequelize to sync all defined models to db
 ```
 
 Now, let's make the `createModels` function. Typically, people create an `index.ts` file that has the function that creates models as a default export. The function then just calls `sequelize.import` with every file in the directory, which would be the model files. The problem with that approach is that there's no way to maintain typechecking. To keep those juicy types, we'll create an interface called `DbInterface`. Then, `createModels` will return an object `db` of type `DbInterface` which will have the Sequelize models attached to them. The important bit is that it will be explicitly defined in `DbInterface` which models are defined and what attributes and methods each model has. The `db` object can then be passed to api route handlers, which can use the models to make Sequelize queries.
@@ -243,15 +251,15 @@ Next, `models/index.ts`, where `createModels` lives.
 
 ```typescript
 // src/models/index.ts
-import * as Sequelize from "sequelize";
-import { DbInterface } from "src/typings/DbInterface";
-import { UserFactory } from "./User";
-import { PostFactory } from "./Post";
-import { CommentFactory } from "./Comment";
+import Sequelize from 'sequelize';
+import { DbInterface } from'typings/DbInterface';
+import { UserFactory } from './User';
+import { PostFactory } from './Post';
+import { CommentFactory } from './Comment';
 
-export const createModels = (databaseId: string, sequelizeConfig): DbInterface => {
-  const { url: dbConnectionString } = sequelizeConfig;
-  const sequelize = new Sequelize(dbConnectionString, sequelizeConfig);
+export const createModels = (sequelizeConfig: any): DbInterface => {
+  const { database, username, password, params } = sequelizeConfig;
+  const sequelize = new Sequelize(database, username, password, params);
 
   const db: DbInterface = {
     sequelize,
@@ -263,6 +271,7 @@ export const createModels = (databaseId: string, sequelizeConfig): DbInterface =
 
   return db;
 };
+
 ```
 
 Woah, we can finally write our api routes! That didn't take too long. Let's do that.
@@ -271,20 +280,20 @@ Woah, we can finally write our api routes! That didn't take too long. Let's do t
 // src/app.ts
 app.get('/users', (req: Request, res: Response) => {
   db.User.findAll()
-    .then((users: UserInstance[]) => res.status(200).json({ users }));
-    .catch(err => res.status(500).json({ err: 'oops' }));
+    .then((users: UserInstance[]) => res.status(200).json({ users }))
+    .catch(err => res.status(500).json({ err: ['oops', err] }));
 });
 
 app.get('/comments', (req: Request, res: Response) => {
   db.Comment.findAll()
-    .then((comments: CommentInstance[]) => res.status(200).json({ comments }));
-    .catch(err => res.status(500).json({ err: 'oops' }));
+    .then((comments: CommentInstance[]) => res.status(200).json({ comments }))
+    .catch(err => res.status(500).json({ err: ['oops', err] }));
 });
 
 app.get('/posts', (req: Request, res: Response) => {
   db.Post.findAll()
-    .then((posts: PostInstance[]) => res.status(200).json({ posts }));
-    .catch(err => res.status(500).json({ err: 'oops' }));
+    .then((posts: PostInstance[]) => res.status(200).json({ posts }))
+    .catch(err => res.status(500).json({ err: ['oops', err] }));
 });
 ```
 
@@ -296,15 +305,23 @@ As an example, when you creating a Post, just look at how autocomplete blesses y
 
 If you try and pass an object that isn't exactly right, Typescript will know and tell you this at compile time! At compile time!! With any good editor or IDE, you'll get these errors right in your editor. No more waiting till production before you realise that you've made a typo, or that some attribute is a string, not a number.
 
+If you'd like to see the repo at this point, run
+
+```shell
+$ git checkout 1.basic_models
+```
+
 ## Relationships are hard
 
 This is where it gets tricky. Let's add the associations to our Sequelize models. Typically, when using Sequelize, our model factories will also add a method `associate` to the model, which will take the `db` object and do things like calling
 
 ```typescript
-Comment.belongsTo(db.User, { as: 'author' });
+Comment.belongsTo(db.User, { as: 'author', foreignKey: 'AuthorId' });
 ```
 
-If you don't know how to do associations in sequelize with Javascript, it might be helpful to read their [docs][sqlize_associations_docs] on it first. In short, we define associations by using the `belongsTo`, `hasOne`, `hasMany` and `belongsToMany` functions. Recall, we said we'd set up the following associations:
+If you don't know how to do associations in sequelize with Javascript, it might be helpful to read their [docs][sqlize_associations_docs] on it first. In short, we define associations by using the `belongsTo`, `hasOne`, `hasMany` and `belongsToMany` functions. The `as` option specifies the alias for referring to the model. The `foreignKey` option allows you to manually specify the name of the foreign key in the table.
+
+Recall, we said we'd set up the following associations:
 
 - `Comments` belong to one `User`, via `AuthorId`. A `User` can have many `Comments`.
 - `Comments` belong to one `Post`, via `PostId`. A `Post` can have many `Comments`.
@@ -317,6 +334,9 @@ So, we can update our model factories to create these relationships. Take our `P
 // src/models/Post.ts
 export const PostFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes): Sequelize.Model<PostInstance, PostAttributes> => {
   const attributes: SequelizeAttributes<PostAttributes> = {
+    name: {
+      type: DataTypes.STRING
+    },
     title: {
       type: DataTypes.STRING
     },
@@ -328,12 +348,12 @@ export const PostFactory = (sequelize: Sequelize.Sequelize, DataTypes: Sequelize
     }
   };
 
-  const Post = sequelize.define<PostInstance, PostAttributes>("Post", attributes);
+  const Post = sequelize.define<PostInstance, PostAttributes>('Post', attributes);
 
-  // *** this is new ***
+  // ** this is new **
   Post.associate = models => {
     Post.hasMany(models.Comment);
-    Post.belongsTo(models.User, { as: 'author' });
+    Post.belongsTo(models.User, { as: 'author', foreignKey: 'AuthorId' });
   };
 
   return Post;
@@ -344,39 +364,39 @@ We can also add `.associate` functions to `UserFactory` and `CommentFactory`.
 
 ```typescript
 User.associate = models => {
-  User.hasMany(models.Comment);
-  User.hasMany(models.Post);
+  User.hasMany(models.Comment, { foreignKey: 'AuthorId' });
+  User.hasMany(models.Post, { foreignKey: 'AuthorId' });
   User.belongsToMany(models.Comment, {
     through: 'PostUpvotes',
     as: 'upvotedComments'
   });
-}
+};
 ```
 
 ```typescript
 Comment.associate = models => {
   Comment.belongsTo(models.Post);
-  Comment.belongsTo(models.User, { as: 'author' });
-  Comment.belongToMany(models.User, {
+  Comment.belongsTo(models.User, { as: 'author', foreignKey: 'AuthorId' });
+  Comment.belongsToMany(models.User, {
     through: 'PostUpvotes',
     as: 'upvoters'
   });
-}
+};
 ```
 
 Now, what we have left to do is invoke these `.associate` functions from `src/models/index.ts`. That's easy.
 
 ```typescript
 // src/models/index.ts
-import * as Sequelize from "sequelize";
-import { DbInterface } from "src/typings/DbInterface";
-import { UserFactory } from "./User";
-import { PostFactory } from "./Post";
-import { CommentFactory } from "./Comment";
+import Sequelize from 'sequelize';
+import { DbInterface } from'typings/DbInterface';
+import { UserFactory } from './User';
+import { PostFactory } from './Post';
+import { CommentFactory } from './Comment';
 
-export const createModels = (databaseId: string, sequelizeConfig): DbInterface => {
-  const { url: dbConnectionString } = sequelizeConfig;
-  const sequelize = new Sequelize(dbConnectionString, sequelizeConfig);
+export const createModels = (sequelizeConfig: any): DbInterface => {
+  const { database, username, password, params } = sequelizeConfig;
+  const sequelize = new Sequelize(database, username, password, params);
 
   const db: DbInterface = {
     sequelize,
@@ -386,7 +406,6 @@ export const createModels = (databaseId: string, sequelizeConfig): DbInterface =
     User: UserFactory(sequelize, Sequelize)
   };
 
-  // ** this is new **
   Object.keys(db).forEach(modelName => {
     if (db[modelName].associate) {
       db[modelName].associate(db);
@@ -402,7 +421,7 @@ Now we're all set up! When we run our app, Sequelize will also create all the re
 However, All is not as good as it seems! Let's consider the line
 
 ```typescript
-Comment.belongsTo(db.User, { as: 'author' });
+Comment.belongsTo(db.User, { as: 'author', foreignKey: 'AuthorId' });
 ```
 
 This adds a column `AuthorId` to the `Comments` table in the database. Sequelize then adds the methods `getAuthor`, `setAuthor` and `createAuthor` to a `CommentInstance`. But, the interface `CommentInstance` we defined doesn't have any type signatures for those methods. So, if we have a comment instance and we write `comment.getAuthor()`, then _**this will not compile!**_ Typescript doesn't know that the method `.getAuthor` exists on a `CommentInstance`, so this will fail at compile time. We need to add type signatures for these methods to the `CommentInstance` interface. What type do we give them? Sequelize provides some types with extremely convoluted names.
@@ -430,80 +449,80 @@ I'm about to show you the new instance interfaces for our schema. Please don't b
 
 ```typescript
 export interface CommentInstance extends Sequelize.Instance<CommentAttributes>, CommentAttributes {
-    getPost: Sequelize.BelongsToGetAssociationMixin<PostInstance>;
-    setPost: Sequelize.BelongsToSetAssociationMixin<PostInstance, PostInstance["id"]>;
-    createPost: Sequelize.BelongsToCreateAssociationMixin<PostAttributes>;
+  getPost: Sequelize.BelongsToGetAssociationMixin<PostInstance>;
+  setPost: Sequelize.BelongsToSetAssociationMixin<PostInstance, PostInstance['id']>;
+  createPost: Sequelize.BelongsToCreateAssociationMixin<PostAttributes>;
 
-    getAuthor: Sequelize.BelongsToGetAssociationMixin<UserInstance>;
-    setAuthor: Sequelize.BelongsToSetAssociationMixin<UserInstance, UserInstance["id"]>;
-    createAuthor: Sequelize.BelongsToCreateAssociationMixin<UserAttributes>;
+  getAuthor: Sequelize.BelongsToGetAssociationMixin<UserInstance>;
+  setAuthor: Sequelize.BelongsToSetAssociationMixin<UserInstance, UserInstance['id']>;
+  createAuthor: Sequelize.BelongsToCreateAssociationMixin<UserAttributes>;
 
-    getUpvoters: Sequelize.BelongsToManyGetAssociationsMixin<UserInstance>;
-    setUpvoters: Sequelize.BelongsToManySetAssociationsMixin<UserInstance, UserInstance["id"], "PostUpvotes">;
-    addUpvoters: Sequelize.BelongsToManyAddAssociationsMixin<UserInstance, UserInstance["id"], "PostUpvotes">;
-    addUpvoters: Sequelize.BelongsToManyAddAssociationMixin<UserInstance, UserInstance["id"], "PostUpvotes">;
-    createUpvoters: Sequelize.BelongsToManyCreateAssociationMixin<UserAttributes, UserInstance["id"], "PostUpvotes">;
-    removeUpvoters: Sequelize.BelongsToManyRemoveAssociationMixin<UserInstance, UserInstance["id"]>;
-    removeUpvoters: Sequelize.BelongsToManyRemoveAssociationsMixin<UserInstance, UserInstance["id"]>;
-    hasUpvoters: Sequelize.BelongsToManyHasAssociationMixin<UserInstance, UserInstance["id"]>;
-    hasUpvoters: Sequelize.BelongsToManyHasAssociationsMixin<UserInstance, UserInstance["id"]>;
-    countUpvoters: Sequelize.BelongsToManyCountAssociationsMixin;
+  getUpvoters: Sequelize.BelongsToManyGetAssociationsMixin<UserInstance>;
+  setUpvoters: Sequelize.BelongsToManySetAssociationsMixin<UserInstance, UserInstance['id'], 'PostUpvotes'>;
+  addUpvoters: Sequelize.BelongsToManyAddAssociationsMixin<UserInstance, UserInstance['id'], 'PostUpvotes'>;
+  addUpvoter: Sequelize.BelongsToManyAddAssociationMixin<UserInstance, UserInstance['id'], 'PostUpvotes'>;
+  createUpvoters: Sequelize.BelongsToManyCreateAssociationMixin<UserAttributes, UserInstance['id'], 'PostUpvotes'>;
+  removeUpvoter: Sequelize.BelongsToManyRemoveAssociationMixin<UserInstance, UserInstance['id']>;
+  removeUpvoters: Sequelize.BelongsToManyRemoveAssociationsMixin<UserInstance, UserInstance['id']>;
+  hasUpvoter: Sequelize.BelongsToManyHasAssociationMixin<UserInstance, UserInstance['id']>;
+  hasUpvoters: Sequelize.BelongsToManyHasAssociationsMixin<UserInstance, UserInstance['id']>;
+  countUpvoters: Sequelize.BelongsToManyCountAssociationsMixin;
 };
 ```
 
 ```typescript
 export interface UserInstance extends Sequelize.Instance<UserAttributes>, UserAttributes {
-    getComments: Sequelize.HasManyGetAssociationsMixin<CommentInstance>;
-    setComments: Sequelize.HasManySetAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    addComments: Sequelize.HasManyAddAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    addComment: Sequelize.HasManyAddAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    createComment: Sequelize.HasManyCreateAssociationMixin<CommentAttributes, CommentInstance>;
-    removeComment: Sequelize.HasManyRemoveAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    removeComments: Sequelize.HasManyRemoveAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    hasComment: Sequelize.HasManyHasAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    hasComments: Sequelize.HasManyHasAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    countComments: Sequelize.HasManyCountAssociationsMixin;
+  getComments: Sequelize.HasManyGetAssociationsMixin<CommentInstance>;
+  setComments: Sequelize.HasManySetAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  addComments: Sequelize.HasManyAddAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  addComment: Sequelize.HasManyAddAssociationMixin<CommentInstance, CommentInstance['id']>;
+  createComment: Sequelize.HasManyCreateAssociationMixin<CommentAttributes, CommentInstance>;
+  removeComment: Sequelize.HasManyRemoveAssociationMixin<CommentInstance, CommentInstance['id']>;
+  removeComments: Sequelize.HasManyRemoveAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  hasComment: Sequelize.HasManyHasAssociationMixin<CommentInstance, CommentInstance['id']>;
+  hasComments: Sequelize.HasManyHasAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  countComments: Sequelize.HasManyCountAssociationsMixin;
 
-    getPosts: Sequelize.HasManyGetAssociationsMixin<PostInstance>;
-    setPosts: Sequelize.HasManySetAssociationsMixin<PostInstance, PostInstance["id"]>;
-    addPosts: Sequelize.HasManyAddAssociationsMixin<PostInstance, PostInstance["id"]>;
-    addPost: Sequelize.HasManyAddAssociationMixin<PostInstance, PostInstance["id"]>;
-    createPost: Sequelize.HasManyCreateAssociationMixin<PostAttributes, PostInstance>;
-    removePost: Sequelize.HasManyRemoveAssociationMixin<PostInstance, PostInstance["id"]>;
-    removePosts: Sequelize.HasManyRemoveAssociationsMixin<PostInstance, PostInstance["id"]>;
-    hasPost: Sequelize.HasManyHasAssociationMixin<PostInstance, PostInstance["id"]>;
-    hasPosts: Sequelize.HasManyHasAssociationsMixin<PostInstance, PostInstance["id"]>;
-    countPosts: Sequelize.HasManyCountAssociationsMixin;
+  getPosts: Sequelize.HasManyGetAssociationsMixin<PostInstance>;
+  setPosts: Sequelize.HasManySetAssociationsMixin<PostInstance, PostInstance['id']>;
+  addPosts: Sequelize.HasManyAddAssociationsMixin<PostInstance, PostInstance['id']>;
+  addPost: Sequelize.HasManyAddAssociationMixin<PostInstance, PostInstance['id']>;
+  createPost: Sequelize.HasManyCreateAssociationMixin<PostAttributes, PostInstance>;
+  removePost: Sequelize.HasManyRemoveAssociationMixin<PostInstance, PostInstance['id']>;
+  removePosts: Sequelize.HasManyRemoveAssociationsMixin<PostInstance, PostInstance['id']>;
+  hasPost: Sequelize.HasManyHasAssociationMixin<PostInstance, PostInstance['id']>;
+  hasPosts: Sequelize.HasManyHasAssociationsMixin<PostInstance, PostInstance['id']>;
+  countPosts: Sequelize.HasManyCountAssociationsMixin;
 
-    getUpvotedComments: Sequelize.BelongsToManyGetAssociationsMixin<CommentInstance>;
-    setUpvotedComments: Sequelize.BelongsToManySetAssociationsMixin<CommentInstance, CommentInstance["id"], "PostUpvotes">;
-    addUpvotedComments: Sequelize.BelongsToManyAddAssociationsMixin<CommentInstance, CommentInstance["id"], "PostUpvotes">;
-    addUpvotedComment: Sequelize.BelongsToManyAddAssociationMixin<CommentInstance, CommentInstance["id"], "PostUpvotes">;
-    createUpvotedComment: Sequelize.BelongsToManyCreateAssociationMixin<CommentAttributes, CommentInstance["id"], "PostUpvotes">;
-    removeUpvotedComment: Sequelize.BelongsToManyRemoveAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    removeUpvotedComments: Sequelize.BelongsToManyRemoveAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    hasUpvotedComment: Sequelize.BelongsToManyHasAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    hasUpvotedComments: Sequelize.BelongsToManyHasAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    countUpvotedComments: Sequelize.BelongsToManyCountAssociationsMixin;
+  getUpvotedComments: Sequelize.BelongsToManyGetAssociationsMixin<CommentInstance>;
+  setUpvotedComments: Sequelize.BelongsToManySetAssociationsMixin<CommentInstance, CommentInstance['id'], 'PostUpvotes'>;
+  addUpvotedComments: Sequelize.BelongsToManyAddAssociationsMixin<CommentInstance, CommentInstance['id'], 'PostUpvotes'>;
+  addUpvotedComment: Sequelize.BelongsToManyAddAssociationMixin<CommentInstance, CommentInstance['id'], 'PostUpvotes'>;
+  createUpvotedComment: Sequelize.BelongsToManyCreateAssociationMixin<CommentAttributes, CommentInstance['id'], 'PostUpvotes'>;
+  removeUpvotedComment: Sequelize.BelongsToManyRemoveAssociationMixin<CommentInstance, CommentInstance['id']>;
+  removeUpvotedComments: Sequelize.BelongsToManyRemoveAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  hasUpvotedComment: Sequelize.BelongsToManyHasAssociationMixin<CommentInstance, CommentInstance['id']>;
+  hasUpvotedComments: Sequelize.BelongsToManyHasAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  countUpvotedComments: Sequelize.BelongsToManyCountAssociationsMixin;
 };
 ```
 
 ```typescript
 export interface PostInstance extends Sequelize.Instance<PostAttributes>, PostAttributes {
-    getComments: Sequelize.HasManyGetAssociationsMixin<CommentInstance>;
-    setComments: Sequelize.HasManySetAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    addComments: Sequelize.HasManyAddAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    addComment: Sequelize.HasManyAddAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    createComment: Sequelize.HasManyCreateAssociationMixin<CommentAttributes, CommentInstance>;
-    removeComment: Sequelize.HasManyRemoveAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    removeComments: Sequelize.HasManyRemoveAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    hasComment: Sequelize.HasManyHasAssociationMixin<CommentInstance, CommentInstance["id"]>;
-    hasComments: Sequelize.HasManyHasAssociationsMixin<CommentInstance, CommentInstance["id"]>;
-    countComments: Sequelize.HasManyCountAssociationsMixin;
+  getComments: Sequelize.HasManyGetAssociationsMixin<CommentInstance>;
+  setComments: Sequelize.HasManySetAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  addComments: Sequelize.HasManyAddAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  addComment: Sequelize.HasManyAddAssociationMixin<CommentInstance, CommentInstance['id']>;
+  createComment: Sequelize.HasManyCreateAssociationMixin<CommentAttributes, CommentInstance>;
+  removeComment: Sequelize.HasManyRemoveAssociationMixin<CommentInstance, CommentInstance['id']>;
+  removeComments: Sequelize.HasManyRemoveAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  hasComment: Sequelize.HasManyHasAssociationMixin<CommentInstance, CommentInstance['id']>;
+  hasComments: Sequelize.HasManyHasAssociationsMixin<CommentInstance, CommentInstance['id']>;
+  countComments: Sequelize.HasManyCountAssociationsMixin;
 
-    getAuthor: Sequelize.BelongsToGetAssociationMixin<UserInstance>;
-    setAuthor: Sequelize.BelongsToSetAssociationMixin<UserInstance, UserInstance["id"]>;
-    createAuthor: Sequelize.BelongsToCreateAssociationMixin<UserAttributes>;
+  getAuthor: Sequelize.BelongsToGetAssociationMixin<UserInstance>;
+  setAuthor: Sequelize.BelongsToSetAssociationMixin<UserInstance, UserInstance['id']>;
+  createAuthor: Sequelize.BelongsToCreateAssociationMixin<UserAttributes>;
 };
 ```
 
@@ -516,7 +535,7 @@ We also want to update our `ModelAttributes` interfaces so that 1) we can access
 ```typescript
 export interface CommentAttributes {
   id?: number;
-  name: string;
+  text: string;
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -559,6 +578,9 @@ export interface UserAttributes {
 export interface PostAttributes {
   id?: number;
   name: string;
+  title: string;
+  text: string;
+  category: 'tech' | 'croissants' | 'techno';
   createdAt?: Date;
   updatedAt?: Date;
 
@@ -582,14 +604,13 @@ Type inference even works beautifully with enum types.
 
 ![todo]
 
-You may need to install extensions for your editor to get type inference and linting. VS Code has built-in Typescript support and IntelliSense. We also have the `tslint` extension installed. 
+You may need to install extensions for your editor to get type inference and linting. VS Code has built-in Typescript support and IntelliSense. We also have the `tslint` extension installed.
 
 So, that's that. A small investment into boilerplate and setting up Typescript brings us long-term codebase scalability, free documentation and type-safety. A few weeks of catching bugs instantly in the editor, better code readability and code completion, then you'll be sure its worth it.
 
 By Ahmer Butt, with the help of Maksis, Dimitri, Martin, Amir and Craig.
 
 Are you interested in working on similar problems to what we've described in this blog? If you want to work in a team on the cutting edge of transport innovation, then Vivacity Labs are for you. Send us your CV!
-
 
 [todo]: https://i.imgur.com/OvMZBs9.jpg
 [repo]: https://github.com/ahmerb/ts-sqlize-code/
