@@ -616,5 +616,5 @@ Are you interested in working on similar problems to what we've described in thi
 [repo]: https://github.com/ahmerb/ts-sqlize-code/
 [sqlize_associations_docs]: http://docs.sequelizejs.com/manual/tutorial/associations.html
 [sqlize_config_docs]: http://docs.sequelizejs.com/manual/tutorial/
-[associations_script]: #
+[associations_script]: https://github.com/ahmerb/sequelize-typescript-associations
 [zalecki]: https://michalzalecki.com/using-sequelize-with-typescript/
