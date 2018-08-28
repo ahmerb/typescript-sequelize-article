@@ -10,7 +10,7 @@ Usually, adding types is a matter of adding a `@types` package, but for Sequeliz
 
 We're about to embark on a rollercoaster adventure. At first, adding Typescript will seem like nothing but a cumbersome waste of time. Hours lost to just littering your Sequelize models with a slew of verbose type annotations. But, persevere! By the time we reach the end, your models will be so well typed that your api routes will practically be writing themselves. Here's a sneak peak.
 
-![image TODO][todo]
+![img6]
 
 Now you're enticed, let's get started. We will be creating a simple JSON api for a blog post website. Apparently, there's a big gap in the market for a site where tech nerds, croissant enthusiasts and techno heads can come together to post blogs. So, our website will allow blogs in these three different categories. Here's the database schema.
 
@@ -301,9 +301,13 @@ Now, I encourage you to not copy & paste the above and write them yourself. Just
 
 As an example, when you creating a Post, just look at how autocomplete blesses you.
 
-![todo]
+![img4]
+
+We get documentation, code completion and it even supports enum types.
 
 If you try and pass an object that isn't exactly right, Typescript will know and tell you this at compile time! At compile time!! With any good editor or IDE, you'll get these errors right in your editor. No more waiting till production before you realise that you've made a typo, or that some attribute is a string, not a number.
+
+![img5]
 
 If you'd like to see the repo at this point, run
 
@@ -590,19 +594,29 @@ export interface PostAttributes {
 };
 ```
 
+If you want to see the repo at this point, run
+
+```shell
+$ git checkout 2.associations
+```
+
 ## Finally, the good stuff!
 
 Okay, we've just slaved away writing these big interfaces (or, I did, but you have a nice automated tool to do it for you). What was the point? Well, just look at these.
 
-![todo]
+![img3]
 
 The types Sequelize provide are well detailed, up to the most intricate settings in options objects.
 
-![todo]
+![img2]
 
-Type inference even works beautifully with enum types.
+We even get rich documentation, right in our editor.
 
-![todo]
+![img1]
+
+Even inside this `map`, the types are inferred and our editor knows which attributes we have available on the `user` object. Invaluable.
+
+![img7]
 
 You may need to install extensions for your editor to get type inference and linting. VS Code has built-in Typescript support and IntelliSense. We also have the `tslint` extension installed.
 
@@ -618,3 +632,11 @@ Are you interested in working on similar problems to what we've described in thi
 [sqlize_config_docs]: http://docs.sequelizejs.com/manual/tutorial/
 [associations_script]: https://github.com/ahmerb/sequelize-typescript-associations
 [zalecki]: https://michalzalecki.com/using-sequelize-with-typescript/
+
+[img1]: img1.png
+[img2]: img2.png
+[img3]: img3.png
+[img4]: img4.png
+[img5]: img5.png
+[img6]: img6.png
+[img7]: img7.png
