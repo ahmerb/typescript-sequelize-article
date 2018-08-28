@@ -14,8 +14,6 @@ We're about to embark on a rollercoaster adventure. At first, adding Typescript 
 
 Now you're enticed, let's get started. We will be creating a simple JSON api for a blog post website. Apparently, there's a big gap in the market for a site where tech nerds, croissant enthusiasts and techno heads can come together to post blogs. So, our website will allow blogs in these three different categories. Here's the database schema.
 
-> TODO: Probably, in future, change this to a schema picture like the one Martin made for persp.
-
 | Users           | Posts                                          | Comments         | PostUpvotes       |
 |-----------------|------------------------------------------------|------------------|-------------------|
 | id: number      | id: number                                     | id: number       | PostId: number    |
@@ -27,6 +25,10 @@ Now you're enticed, let's get started. We will be creating a simple JSON api for
 |                 | updatedAt: date                                |                  |                   |
 
 Let's break down the associations. A `User` has many `Post`'s which they have authored. This is the `AuthorId` column on `Posts`. This is a one-to-many relationship. A `User` also has a many-to-many relationship with `Posts` via `PostUpvotes`: a user can upvote many posts, and a post can be upvoted by many users. Finally, `Comments` have both a `User`, via `AuthorId`, and a `Post`. These are both one-to-many.
+
+Here's the equivalent diagram.
+
+![schema]
 
 ## Finally, some code
 
@@ -545,22 +547,22 @@ export interface CommentAttributes {
 
   // ** this is new **
 
-  // We allow both either PostInstance or a Post's primary key,
+  // We allow both either PostAttributes or a Post's primary key,
   // so we can specifiy either when we create a model.
   // `posts?` is optional because we don't want to force
   // specifying associations when we create a model. We also
   // want to be able to query for Comment's without also having
   // to load its posts.
-  post?: PostInstance | PostInstance['id'];
+  post?: PostAttributes | PostAttributes['id'];
 
   // Similarly, we define the field `author?`. An `author` is an
   // alias for the `User` model, so we define that `author?` can
-  // either be a `UserInstance` or a `UserInstance['id']`.
-  author?: UserInstance | UserInstance['id'];
+  // either be a `UserAttributes` or a `UserAttributes['id']`.
+  author?: UserAttributes | UserAttributes['id'];
   
   // `upvoters` is a BelongsToMany association, so we define that
   // a comment can have an array of User's, under the field `upvoters`.
-  upvoters?: UserInstance[] | UserInstance['id'][];
+  upvoters?: UserAttributes[] | UserAttributes['id'][];
 };
 ```
 
@@ -572,9 +574,9 @@ export interface UserAttributes {
   updatedAt?: Date;
 
   // ** this is new **
-  comments?: CommentInstance[] | CommentInstance['id'][];
-  posts?: PostInstance[] | PostInstance['id'][];
-  upvotedComments?: CommentInstance[] | CommentInstance['id'][];
+  comments?: CommentAttributes[] | CommentAttributes['id'][];
+  posts?: PostAttributes[] | PostAttributes['id'][];
+  upvotedComments?: CommentAttributes[] | CommentAttributes['id'][];
 };
 ```
 
@@ -589,8 +591,8 @@ export interface PostAttributes {
   updatedAt?: Date;
 
   // ** this is new **
-  comments?: CommentInstance[] | CommentInstance['id'][];
-  author: UserInstance | UserInstance['id'];
+  comments?: CommentAttributes[] | CommentAttributes['id'][];
+  author: UserAttributes | UserAttributes['id'];
 };
 ```
 
@@ -633,6 +635,7 @@ Are you interested in working on similar problems to what we've described in thi
 [associations_script]: https://github.com/ahmerb/sequelize-typescript-associations
 [zalecki]: https://michalzalecki.com/using-sequelize-with-typescript/
 
+[schema]: schema.png
 [img1]: img1.png
 [img2]: img2.png
 [img3]: img3.png
